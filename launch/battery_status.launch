@@ -1,0 +1,4 @@
+<launch>
+  <node name="battery_status" pkg="jetto_base" type="battery.py" />
+  <node name="battery_status_display" pkg="jetto_base" type="battery_status.py" />
+</launch>

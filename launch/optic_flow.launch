@@ -1,0 +1,4 @@
+<launch>
+  <node name="camera" pkg="jetto_base" type="camera" />
+  <node name="optic_flow" pkg="jetto_base" type="optic_flow" />
+</launch>

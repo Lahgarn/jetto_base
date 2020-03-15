@@ -1,0 +1,4 @@
+<launch>
+  <node name="motor" pkg="jetto_base" type="motor.py" />
+  <node name="controller" pkg="jetto_base" type="controller.py" />
+</launch>
