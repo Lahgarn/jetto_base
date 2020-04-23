@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(jetto_base)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   # messages
   std_msgs
   sensor_msgs
-  message_generation
+  jetto_msgs
   # images
   cv_bridge
   image_transport
@@ -29,23 +29,6 @@ catkin_python_setup()
 
 # Add launch files
 roslaunch_add_file_check(launch)
-
-##############
-## Messages ##
-##############
-
-add_message_files(
-  FILES
-  RawMotor.msg
-  BatteryStatus.msg
-  Point2D.msg
-  Keypoints.msg
-)
-
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
 
 ###################################
 ## catkin specific configuration ##
@@ -82,6 +65,8 @@ add_executable(optic_flow
     src/cpp/optic_flow/of_node.cpp
     src/cpp/optic_flow/of_calculator.cpp
 )
+
+add_dependencies(optic_flow ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(optic_flow ${catkin_LIBRARIES} ${OpenCV_LIBS})
 

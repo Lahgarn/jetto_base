@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     image_transport::Publisher raw_pub = it.advertise(Topics::CameraRaw, 1);
 
     // Camera setup
-    Camera cam(raw_width, raw_height, CAMERA_CM_1);
+    Camera cam(raw_width, raw_height, CAMERA_CM_3);
     ros::Rate loop_rate(raw_rate);
 
     if(!cam.open())

@@ -1,7 +1,7 @@
 import rospy
 from jetto_base.constants import Topics
 from jetto_base.motors.motors import MotorDriver
-from jetto_base.msg import RawMotor
+from jetto_msgs.msg import RawMotor
 
 
 class RawMotorSubscriber():

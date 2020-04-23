@@ -2,8 +2,8 @@
 
 #include <sensor_msgs/Image.h>
 
-#include "jetto_base/Point2D.h"
-#include "jetto_base/Keypoints.h"
+#include "jetto_msgs/Point2D.h"
+#include "jetto_msgs/Keypoints.h"
 #include "optic_flow/of_calculator.h"
 
 
@@ -16,7 +16,7 @@ OpticFlowCalculator::OpticFlowCalculator(std::string _images_topic, std::string 
     prev_frame = NULL;
     curr_frame = NULL;
 
-    keypoint_pub_ = nh_.advertise<jetto_base::Keypoints>(_kp_topic, 10);
+    keypoint_pub_ = nh_.advertise<jetto_msgs::Keypoints>(_kp_topic, 10);
 }
 
 OpticFlowCalculator::~OpticFlowCalculator()
@@ -60,12 +60,12 @@ void OpticFlowCalculator::on_receive_image(const sensor_msgs::ImageConstPtr& msg
         header.stamp = ros::Time::now();
         header.frame_id = msg->header.frame_id;
 
-        jetto_base::Keypoints kps;
+        jetto_msgs::Keypoints kps;
         kps.header = header;
         kps.img_seq = msg->header.seq;
         for(int i=0; i<keypoints.size(); i++)
         {
-            jetto_base::Point2D point;
+            jetto_msgs::Point2D point;
             point.x = keypoints[i].pt.x;
             point.y = keypoints[i].pt.y;
             kps.keypoints.push_back(point);

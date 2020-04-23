@@ -1,6 +1,6 @@
 <launch>
-  <param name="/sensors/camera/raw/width" type="int" value="656" />
-  <param name="/sensors/camera/raw/height" type="int" value="492" />
+  <param name="/sensors/camera/raw/width" type="int" value="960" />
+  <param name="/sensors/camera/raw/height" type="int" value="540" />
   <param name="/sensors/camera/raw/rate" type="int" value="20" />
   <node name="camera" pkg="jetto_base" type="camera" />
 </launch>

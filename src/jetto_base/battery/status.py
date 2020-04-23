@@ -1,6 +1,6 @@
 import rospy
 from jetto_base.constants import Topics
-from jetto_base.msg import BatteryStatus
+from jetto_msgs.msg import BatteryStatus
 
 from . import ina219
 
