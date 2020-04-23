@@ -1,9 +1,18 @@
-#include <opencv2/features2d.hpp>
+#define HAVE_INLINE
+
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <vector>
+
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_multifit.h>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/video/tracking.hpp>
 
 #include <sensor_msgs/Image.h>
 
-#include "jetto_msgs/Point2D.h"
-#include "jetto_msgs/Keypoints.h"
 #include "optic_flow/of_calculator.h"
 
 
@@ -16,7 +25,20 @@ OpticFlowCalculator::OpticFlowCalculator(std::string _images_topic, std::string 
     prev_frame = NULL;
     curr_frame = NULL;
 
-    keypoint_pub_ = nh_.advertise<jetto_msgs::Keypoints>(_kp_topic, 10);
+    width = 960;
+    height = 540;
+
+    y_offset = 180;
+    spacing = 40;
+    flow_window = 20;
+
+    flow_mat = get_flow_mat(flow_grid, width, height, spacing, y_offset);
+    flow_obs = gsl_vector_alloc(flow_mat->size1);
+
+    params = gsl_vector_alloc(2);
+    cov = gsl_matrix_alloc(2, 2);
+    chisq = (double*)malloc(sizeof(double));
+    flws = gsl_multifit_linear_alloc(flow_mat->size1, flow_mat->size2);
 }
 
 OpticFlowCalculator::~OpticFlowCalculator()
@@ -48,36 +70,55 @@ void OpticFlowCalculator::on_receive_image(const sensor_msgs::ImageConstPtr& msg
 
     if(curr_frame && prev_frame)
     {
-        cv::Ptr<cv::Feature2D> detector = cv::ORB::create();
-        std::vector<cv::KeyPoint> keypoints;
+        compute_flow();
+    }
+}
 
-		ROS_INFO("Starting ORB");
-		detector->detect(curr_frame->image, keypoints);
-		ROS_INFO("ORB found %d points", (int)keypoints.size());
+void OpticFlowCalculator::compute_flow()
+{
+    std::vector<uchar> features_found;
+    std::vector<cv::Point2f> new_grid;
 
-        std_msgs::Header header;
-        header.seq = msg->header.seq;
-        header.stamp = ros::Time::now();
-        header.frame_id = msg->header.frame_id;
+    // Compute LK flow
+    cv::calcOpticalFlowPyrLK(
+        prev_frame, curr_frame,         // Input images
+        flow_grid, new_grid,            // Input/output points to track
+        features_found,                 // Output vector whether a point was tracked
+        cv::noArray(),                  // Output vector, lists errors (optional)
+        cv::Size(flow_window, flow_window),  // Search window size
+        3,                              // Maximum pyramid level to construct
+        cv::TermCriteria(
+            cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,
+            20,                         // Maximum number of iterations
+            0.3                         // Minimum change per iteration
+        )
+    );
 
-        jetto_msgs::Keypoints kps;
-        kps.header = header;
-        kps.img_seq = msg->header.seq;
-        for(int i=0; i<keypoints.size(); i++)
-        {
-            jetto_msgs::Point2D point;
-            point.x = keypoints[i].pt.x;
-            point.y = keypoints[i].pt.y;
-            kps.keypoints.push_back(point);
-        }
+    // Build observations
+    build_flow(flow_obs, flow_grid, new_grid);
 
-        keypoint_pub_.publish(kps);
+    // Solve
+    gsl_multifit_linear(flow_mat, flow_obs, params, cov, chisq, flws);
+
+    /* auto end_model = std::chrono::system_clock::now(); */
+
+    float d_x = gsl_vector_get(params, 0);
+    float d_theta = gsl_vector_get(params, 1);
+
+    printf("Computed velocity: (%f, %f)\n", d_x, d_theta);
+}
 
 
-		/* cv::Mat flowxy; */
-		/* ROS_INFO("Starting OF"); */
-        /* cv::calcOpticalFlowFarneback(prev_frame->image, curr_frame->image, flowxy, */
-		/* 							 0.5, 3, 15, 3, 5, 1.2, 0); */
-		/* ROS_INFO("Ended OF"); */
+void OpticFlowCalculator::build_flow(std::vector<cv::Point2f> &new_grid)
+{
+    for(int i=0; i < static_cast<int>(grid_prev.size()); ++i)
+    {
+        cv::Point2f pp = flow_grid[i];
+        cv::Point2f cp = new_grid[i];
+
+        cv::Point2f flow = cp - pp;
+
+        gsl_vector_set(flow_obs, 2 * i + 0, flow.x);
+        gsl_vector_set(flow_obs, 2 * i + 1, flow.y);
     }
 }
